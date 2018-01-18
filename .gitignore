@@ -1,0 +1,11 @@
+# IntelliJ
+.idea/
+*.iml
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+# Vi
+.*.swp
