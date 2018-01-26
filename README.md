@@ -126,7 +126,6 @@ git add pom.xml \
   && git tag --sign --message "Version v${VERSION}" v${VERSION}
 
 mvn versions:set -DgenerateBackupPoms=false -DnextSnapshot=true
-VERSION=$(mvn help:evaluate -Dexpression=project.version | grep -v '\[')
 sed --in-place "s|<tag>v${VERSION}</tag>|<tag>HEAD</tag>|" pom.xml
 
 git add pom.xml \
