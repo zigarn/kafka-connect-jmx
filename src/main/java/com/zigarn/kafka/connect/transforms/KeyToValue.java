@@ -9,8 +9,6 @@ import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.transforms.Transformation;
 
-import static org.apache.kafka.connect.transforms.util.Requirements.requireStruct;
-
 import java.util.Map;
 
 
@@ -30,8 +28,6 @@ public class KeyToValue<R extends ConnectRecord<R>> implements Transformation<R>
     String FIELD_NAME = KeyToValue.FIELD_NAME;
   }
 
-  private static final String PURPOSE = "insert key into value struct";
-
   public final static String FIELD_NAME = "key.field.name";
 
 
@@ -43,7 +39,7 @@ public class KeyToValue<R extends ConnectRecord<R>> implements Transformation<R>
   @Override
   public R apply(R record)
   {
-    final Struct value = requireStruct(record.value(), PURPOSE);
+    final Map value = (Map)record.valueSchema();
 
     Schema updatedSchema = makeUpdatedSchema(record.valueSchema());
     final Struct updatedValue = new Struct(updatedSchema);
