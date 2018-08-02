@@ -83,8 +83,8 @@ public class JmxSourceTask extends SourceTask {
             environment = new HashMap<>();
             environment.put(JMXConnector.CREDENTIALS, new String[]{jmxUsername, jmxPassword});
         }
-        maxConnectionAttempts = Integer.getInteger(props.get(JmxSourceConnector.CONNECTION_ATTEMPTS_CONF));
-        connectionRetryBackoff = Long.getLong(props.get(JmxSourceConnector.CONNECTION_BACKOFF_CONF));
+        maxConnectionAttempts = Integer.parseInt(props.get(JmxSourceConnector.CONNECTION_ATTEMPTS_CONF));
+        connectionRetryBackoff = Long.parseLong(props.get(JmxSourceConnector.CONNECTION_BACKOFF_CONF));
     }
 
     @Override
