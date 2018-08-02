@@ -8,8 +8,6 @@ import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.transforms.Transformation;
-import org.apache.kafka.connect.transforms.util.SchemaUtil;
-import org.apache.kafka.connect.transforms.util.SimpleConfig;
 
 import static org.apache.kafka.connect.transforms.util.Requirements.requireStruct;
 
@@ -29,18 +27,17 @@ public class KeyToValue<R extends ConnectRecord<R>> implements Transformation<R>
 
   private interface ConfigName
   {
-    String FIELD_NAME = "key.field.name";
+    String FIELD_NAME = KeyToValue.FIELD_NAME;
   }
 
   private static final String PURPOSE = "insert key into value struct";
 
-  private String fieldName;
+  public final static String FIELD_NAME = "key.field.name";
+
 
   @Override
   public void configure(Map<String, ?> props)
   {
-    final SimpleConfig config = new SimpleConfig(CONFIG_DEF, props);
-    fieldName = config.getString(ConfigName.FIELD_NAME);
   }
 
   @Override
@@ -53,7 +50,7 @@ public class KeyToValue<R extends ConnectRecord<R>> implements Transformation<R>
 
     for (Field field : updatedValue.schema().fields())
     {
-      if (field.name().equals(fieldName))
+      if (field.name().equals(FIELD_NAME))
       {
         updatedValue.put(field.name(), record.key());
       }
@@ -75,12 +72,12 @@ public class KeyToValue<R extends ConnectRecord<R>> implements Transformation<R>
 
   private Schema makeUpdatedSchema(Schema schema)
   {
-    final SchemaBuilder builder = SchemaUtil.copySchemaBasics(schema, SchemaBuilder.struct());
+    final SchemaBuilder builder = new SchemaBuilder(schema.type());
     for (Field field : schema.fields())
     {
       builder.field(field.name(), field.schema());
     }
-    builder.field(fieldName, Schema.OPTIONAL_STRING_SCHEMA);
+    builder.field(FIELD_NAME, Schema.OPTIONAL_STRING_SCHEMA);
 
     return builder.build();
   }
