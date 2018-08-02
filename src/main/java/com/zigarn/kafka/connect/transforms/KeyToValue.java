@@ -39,7 +39,7 @@ public class KeyToValue<R extends ConnectRecord<R>> implements Transformation<R>
   @Override
   public R apply(R record)
   {
-    final Map value = (Map)record.valueSchema();
+    final Map value = (Map)record.value();
 
     Schema updatedSchema = makeUpdatedSchema(record.valueSchema());
     final Struct updatedValue = new Struct(updatedSchema);
