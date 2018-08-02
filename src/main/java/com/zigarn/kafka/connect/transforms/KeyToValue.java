@@ -10,6 +10,7 @@ import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.transforms.Transformation;
 
 import java.util.Map;
+import org.apache.kafka.connect.errors.DataException;
 
 
 public class KeyToValue<R extends ConnectRecord<R>> implements Transformation<R>
@@ -30,6 +31,8 @@ public class KeyToValue<R extends ConnectRecord<R>> implements Transformation<R>
 
   public final static String FIELD_NAME = "key.field.name";
 
+  private static final String PURPOSE = "insert key into value struct";
+
 
   @Override
   public void configure(Map<String, ?> props)
@@ -39,7 +42,10 @@ public class KeyToValue<R extends ConnectRecord<R>> implements Transformation<R>
   @Override
   public R apply(R record)
   {
-    final Map value = (Map)record.value();
+    if (!(record.value() instanceof Struct))
+      throw new DataException("Only Struct objects supported for [" + PURPOSE + "], found: " + (record.value() == null ? "null" : record.value().getClass().getName()));
+
+    final Struct value = (Struct)record.value();
 
     Schema updatedSchema = makeUpdatedSchema(record.valueSchema());
     final Struct updatedValue = new Struct(updatedSchema);
@@ -68,7 +74,18 @@ public class KeyToValue<R extends ConnectRecord<R>> implements Transformation<R>
 
   private Schema makeUpdatedSchema(Schema schema)
   {
-    final SchemaBuilder builder = new SchemaBuilder(schema.type());
+    final SchemaBuilder builder = SchemaBuilder.struct();
+
+    builder.name(schema.name());
+    builder.version(schema.version());
+    builder.doc(schema.doc());
+
+    final Map<String, String> params = schema.parameters();
+    if (params != null)
+    {
+      builder.parameters(params);
+    }
+
     for (Field field : schema.fields())
     {
       builder.field(field.name(), field.schema());
