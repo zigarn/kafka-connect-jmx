@@ -26,17 +26,17 @@ public class KeyToValue<R extends ConnectRecord<R>> implements Transformation<R>
 
   private interface ConfigName
   {
-    String FIELD_NAME = KeyToValue.FIELD_NAME;
+    String FIELD_NAME = "key.field.name";
   }
-
-  public final static String FIELD_NAME = "key.field.name";
 
   private static final String PURPOSE = "insert key into value struct";
 
+  private String fieldName;
 
   @Override
   public void configure(Map<String, ?> props)
   {
+    fieldName = (String)CONFIG_DEF.parse(props).get(ConfigName.FIELD_NAME);
   }
 
   @Override
@@ -61,7 +61,7 @@ public class KeyToValue<R extends ConnectRecord<R>> implements Transformation<R>
 
     for (Field field : updatedValue.schema().fields())
     {
-      if (field.name().equals(FIELD_NAME))
+      if (field.name().equals(fieldName))
       {
         updatedValue.put(field.name(), record.key());
       }
@@ -76,7 +76,7 @@ public class KeyToValue<R extends ConnectRecord<R>> implements Transformation<R>
   private R updateMap(R record)
   {
     Map map = (Map)record.value();
-    map.put(FIELD_NAME, record.key());
+    map.put(fieldName, record.key());
     return newRecord(record, record.valueSchema(), map);
   }
 
@@ -111,7 +111,7 @@ public class KeyToValue<R extends ConnectRecord<R>> implements Transformation<R>
     {
       builder.field(field.name(), field.schema());
     }
-    builder.field(FIELD_NAME, Schema.OPTIONAL_STRING_SCHEMA);
+    builder.field(fieldName, Schema.OPTIONAL_STRING_SCHEMA);
 
     return builder.build();
   }
