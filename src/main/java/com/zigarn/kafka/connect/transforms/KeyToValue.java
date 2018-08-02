@@ -10,7 +10,7 @@ import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.transforms.Transformation;
 
 import java.util.Map;
-import java.util.function.Function;
+import org.apache.kafka.connect.errors.DataException;
 
 
 public class KeyToValue<R extends ConnectRecord<R>> implements Transformation<R>
@@ -31,6 +31,8 @@ public class KeyToValue<R extends ConnectRecord<R>> implements Transformation<R>
 
   public final static String FIELD_NAME = "key.field.name";
 
+  private static final String PURPOSE = "insert key into value struct";
+
 
   @Override
   public void configure(Map<String, ?> props)
@@ -40,17 +42,19 @@ public class KeyToValue<R extends ConnectRecord<R>> implements Transformation<R>
   @Override
   public R apply(R record)
   {
-    Function<Field, Object> get;
-    if (record.value() instanceof Struct)
-    {
-      Struct struct = (Struct)record.value();
-      get = (field) -> struct.get(field);
-    }
-    else
-    {
-      Map map = (Map)record.value();
-      get = (field) -> map.get(field.name());
-    }
+    Object value = record.value();
+
+    if (value instanceof Struct)
+      return updateStruct(record);
+    if (value instanceof Map)
+      return updateMap(record);
+
+    throw new DataException("Only Struct/Map objects supported for [" + PURPOSE + "], found: " + (value == null ? "null" : value.getClass().getName()));
+  }
+
+  private R updateStruct(R record)
+  {
+    final Struct value = (Struct)record.value();
 
     Schema updatedSchema = makeUpdatedSchema(record.valueSchema());
     final Struct updatedValue = new Struct(updatedSchema);
@@ -63,9 +67,21 @@ public class KeyToValue<R extends ConnectRecord<R>> implements Transformation<R>
       }
       else
       {
-        updatedValue.put(field.name(), get.apply(field));
+        updatedValue.put(field.name(), value.get(field));
       }
     }
+    return newRecord(record, updatedSchema, updatedValue);
+  }
+
+  private R updateMap(R record)
+  {
+    Map map = (Map)record.value();
+    map.put(FIELD_NAME, record.key());
+    return newRecord(record, record.valueSchema(), map);
+  }
+
+  private R newRecord(R record, Schema updatedSchema, Object updatedValue)
+  {
     return record.newRecord(
         record.topic(),
         record.kafkaPartition(),
