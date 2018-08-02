@@ -1,16 +1,14 @@
 package com.zigarn.kafka.connect.transforms;
 
-
+import java.util.Map;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.connect.connector.ConnectRecord;
 import org.apache.kafka.connect.data.Field;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
-import org.apache.kafka.connect.transforms.Transformation;
-
-import java.util.Map;
 import org.apache.kafka.connect.errors.DataException;
+import org.apache.kafka.connect.transforms.Transformation;
 
 
 public class KeyToValue<R extends ConnectRecord<R>> implements Transformation<R>
@@ -29,8 +27,6 @@ public class KeyToValue<R extends ConnectRecord<R>> implements Transformation<R>
     String FIELD_NAME = "key.field.name";
   }
 
-  private static final String PURPOSE = "insert key into value struct";
-
   private String fieldName;
 
   @Override
@@ -43,13 +39,23 @@ public class KeyToValue<R extends ConnectRecord<R>> implements Transformation<R>
   public R apply(R record)
   {
     Object value = record.value();
+    Object key = record.key();
+
+    if (key != null && !(key instanceof String))
+      throw new DataException(
+          "Only String/NULL objects supported as key, found: " +
+          value.getClass().getName()
+          );
 
     if (value instanceof Struct)
       return updateStruct(record);
     if (value instanceof Map)
       return updateMap(record);
 
-    throw new DataException("Only Struct/Map objects supported for [" + PURPOSE + "], found: " + (value == null ? "null" : value.getClass().getName()));
+    throw new DataException(
+        "Only Struct/Map objects supported as value, found: " +
+        (value == null ? "null" : value.getClass().getName())
+        );
   }
 
   private R updateStruct(R record)
