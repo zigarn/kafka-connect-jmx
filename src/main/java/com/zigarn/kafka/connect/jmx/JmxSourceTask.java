@@ -17,7 +17,6 @@ package com.zigarn.kafka.connect.jmx;
 
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
-import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kafka.connect.source.SourceTask;
@@ -46,10 +45,7 @@ public class JmxSourceTask extends SourceTask {
     private static final String JMX_URL_FIELD = "jmx.url";
     private static final String BEAN_FIELD = "bean";
     private static final String TIMESTAMP_FIELD = "timestamp";
-    private static final Schema KEY_SCHEMA = SchemaBuilder.struct()
-            .field(JMX_URL_FIELD, Schema.STRING_SCHEMA)
-            .field(BEAN_FIELD, Schema.STRING_SCHEMA)
-            .field(TIMESTAMP_FIELD, Schema.INT64_SCHEMA).build();
+    private static final Schema KEY_SCHEMA = Schema.INT64_SCHEMA;
     private static final Schema VALUE_SCHEMA = SchemaBuilder.map(Schema.STRING_SCHEMA, SchemaBuilder.string().optional().build());
 
     private String topic;
@@ -99,6 +95,7 @@ public class JmxSourceTask extends SourceTask {
                 try {
                     MBeanInfo mBeanInfo = getMBeanServerConnection().getMBeanInfo(objectName);
                     Map<String, String> bean = new HashMap<>();
+                    bean.put(BEAN_FIELD, objectName.getCanonicalName());
                     //log.trace("Getting attributes of MBean {} from JMX service {}", objectName, jmxServiceUrl);
                     for (MBeanAttributeInfo mBeanAttributeInfo : mBeanInfo.getAttributes()) {
                         if (!mBeanAttributeInfo.isReadable()) {
@@ -116,12 +113,8 @@ public class JmxSourceTask extends SourceTask {
                             }
                         }
                     }
-                    Struct key = new Struct(KEY_SCHEMA)
-                            .put(JMX_URL_FIELD, jmxServiceUrl.getURLPath())
-                            .put(BEAN_FIELD, objectName.getCanonicalName())
-                            .put(TIMESTAMP_FIELD, timestamp);
                     SourceRecord record = new SourceRecord(null, null, topic, null,
-                            KEY_SCHEMA, key, VALUE_SCHEMA, bean, System.currentTimeMillis());
+                            KEY_SCHEMA, timestamp, VALUE_SCHEMA, bean, timestamp);
                     if (records == null) {
                         records = new ArrayList<>();
                     }
